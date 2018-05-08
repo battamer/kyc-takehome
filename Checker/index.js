@@ -24,24 +24,32 @@ exports.recieveNewImageMetadata = (event, callback) => {
   const file = event.data;
   const context = event.context;
 
-  var tags = detectTags(file.bucket, file.name)
-  console.log(`	 Tags: ${tags}`);
+  const foundFood = detectTags(file.bucket, file.name, file.timeCreated)
   callback();
 };
 
-function detectTags (bucketName, filename) {
-	var types = ['labels']
-
+function detectTags (bucketName, filename, timeCreated) {
+//	var types = ['labels']
+	var foundFood = 0;
 	vision
 		.labelDetection({ source: { imageUri: `gs://${bucketName}/${filename}` } })
-		.then(results => { 
+		.then(results => {
 			const labels = results[0].labelAnnotations;
-			console.log('labels:');
+			console.log('Labels:');
 			labels.forEach(label => {
 				if(label.description in acceptableTags && label.score >= .5)  {
-					console.log(`${label.description} ${label.score}`);
+					console.log(`FOOD: ${label.description} ${label.score}`);
+					foundFood = 1;
+				} else {					
+					console.log(`NOT FOOD: ${label.description} ${label.score}`);
 				}
 			})
+		})
+		.then(() => {
+				if (foundFood) {
+					console.log(`	 Food uploaded at: ${timeCreated}`);
+				} else {
+					console.log(`	 Upload was not food`);
+				}
 		});
-	return ['a','b','c']
-}
+ }
